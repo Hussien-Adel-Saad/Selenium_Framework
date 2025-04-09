@@ -61,7 +61,7 @@ public class AddToCartTests extends BaseTest {
             JSONParser parser = new JSONParser();
             JsonNode addressData = parser.parseJSON("/testData/addressDetails.json");
 
-            // Access values directly
+            
             String fullName = JSONParser.getValue(addressData, "Full name (First and Last name)");
             String streetName = JSONParser.getValue(addressData, "Street name");
             String city = JSONParser.getValue(addressData, "City/Area");
@@ -69,15 +69,17 @@ public class AddToCartTests extends BaseTest {
             String buildingNo = JSONParser.getValue(addressData, "Building name/no");
             String district = JSONParser.getValue(addressData, "District");
             String nearestLandmark = JSONParser.getValue(addressData, "Nearest landmark");
-            checkoutPage.fillAddressForm("Full name (First and Last name)", fullName);
-            checkoutPage.fillAddressForm("Street name", streetName);
-            checkoutPage.fillAddressForm("City/Area", city);
-            checkoutPage.fillMobileNoInAddressForm("Mobile number", mobileNumber);
-            checkoutPage.fillAddressForm("Building name/no", buildingNo);
-            checkoutPage.fillAddressForm("District", district);
-            checkoutPage.fillAddressForm("Nearest landmark", nearestLandmark);
 
-            checkoutPage.clickOnAddAddress();
+            AddressForm addressForm = new AddressForm();
+            addressForm.fillAddressForm("Full name (First and Last name)", fullName);
+            addressForm.fillAddressForm("Street name", streetName);
+            addressForm.fillAddressForm("City/Area", city);
+            addressForm.fillMobileNoInAddressForm("Mobile number", mobileNumber);
+            addressForm.fillAddressForm("Building name/no", buildingNo);
+            addressForm.fillAddressForm("District", district);
+            addressForm.fillAddressForm("Nearest landmark", nearestLandmark);
+
+            addressForm.clickOnAddAddress();
             ReportManager.logStepWithScreenshot("Address is added successfully");
 
         } catch (Exception e) {
