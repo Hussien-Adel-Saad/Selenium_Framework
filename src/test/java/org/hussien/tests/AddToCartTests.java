@@ -1,7 +1,9 @@
 package org.hussien.tests;
 
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.hussien.core.utils.ConfigReader;
+import org.hussien.core.utils.JSONParser;
 import org.hussien.core.utils.ReportManager;
 import org.hussien.pages.*;
 import org.hussien.tests.base.BaseTest;
@@ -9,6 +11,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 public class AddToCartTests extends BaseTest {
+
 
     @Test
     public void testSuccessfulAddToCart() {
@@ -54,13 +57,25 @@ public class AddToCartTests extends BaseTest {
             CheckoutPage checkoutPage = new CheckoutPage();
             checkoutPage.clickOnChangeAddress();
             checkoutPage.clickOnAddNewAddressLink();
-            checkoutPage.fillAddressForm("Full name (First and Last name)", "Hussien Adel");
-            checkoutPage.fillAddressForm("Street name", "New fostat city");
-            checkoutPage.fillAddressForm("City/Area", "Misr Al Qadimah");
-            checkoutPage.fillMobileNoInAddressForm("Mobile number", "1122104398");
-            checkoutPage.fillAddressForm("Building name/no", "53");
-            checkoutPage.fillAddressForm("District", "Al-Fostat");
-            checkoutPage.fillAddressForm("Nearest landmark", "National museum of civilization");
+
+            JSONParser parser = new JSONParser();
+            JsonNode addressData = parser.parseJSON("/testData/addressDetails.json");
+
+            // Access values directly
+            String fullName = JSONParser.getValue(addressData, "Full name (First and Last name)");
+            String streetName = JSONParser.getValue(addressData, "Street name");
+            String city = JSONParser.getValue(addressData, "City/Area");
+            String mobileNumber = JSONParser.getValue(addressData, "Mobile number");
+            String buildingNo = JSONParser.getValue(addressData, "Building name/no");
+            String district = JSONParser.getValue(addressData, "District");
+            String nearestLandmark = JSONParser.getValue(addressData, "Nearest landmark");
+            checkoutPage.fillAddressForm("Full name (First and Last name)", fullName);
+            checkoutPage.fillAddressForm("Street name", streetName);
+            checkoutPage.fillAddressForm("City/Area", city);
+            checkoutPage.fillMobileNoInAddressForm("Mobile number", mobileNumber);
+            checkoutPage.fillAddressForm("Building name/no", buildingNo);
+            checkoutPage.fillAddressForm("District", district);
+            checkoutPage.fillAddressForm("Nearest landmark", nearestLandmark);
 
             checkoutPage.clickOnAddAddress();
             ReportManager.logStepWithScreenshot("Address is added successfully");
