@@ -1,7 +1,6 @@
 package org.hussien.pages;
 
 import org.hussien.core.driver.WebDriverFactory;
-import org.hussien.core.utils.BrowserUtils;
 import org.hussien.core.utils.InteractionUtils;
 import org.hussien.core.utils.WaitUtils;
 import org.hussien.pages.base.BasePage;
@@ -82,10 +81,10 @@ public class SearchResultsPage extends BasePage {
                         WebElement nameElement = InteractionUtils.findChildElement(product, productName);
                         String productNameText = nameElement.getText().trim();
 
-                        // Your original click logic preserved
+
                         WebElement addButton = addButtons.getFirst();
                         addButton.click();
-                        WaitUtils.waitForMillis(500); // Your original delay
+                        WaitUtils.waitForMillis(500);
 
                         addedProductNames.add(productNameText);
                         expectedTotalPrice += price;

@@ -10,7 +10,6 @@ import org.openqa.selenium.By;
 public class AddressForm extends BasePage {
     // Locators
     private static final By ADDRESS_SUBMIT_BUTTON = By.id("address-ui-widgets-form-submit-button");
-    private static final By FULLNAME_AFTER_ADD = By.xpath("//li[contains(@class,'FullName')]");
 
     // Dynamic locator builders
     private static By getFieldByAriaLabel(String label) {
@@ -34,7 +33,6 @@ public class AddressForm extends BasePage {
 
     public void submitAddress() {
         InteractionUtils.click(ADDRESS_SUBMIT_BUTTON);
-        WaitUtils.waitForVisibility(FULLNAME_AFTER_ADD);
-
+        CheckoutPage.waitForAddressToLoad();
     }
 }

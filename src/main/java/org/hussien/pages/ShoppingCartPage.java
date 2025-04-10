@@ -8,7 +8,6 @@ import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.testng.Assert;
 
-import java.time.Duration;
 import java.util.List;
 
 import static org.hussien.pages.SearchResultsPage.*;
@@ -29,7 +28,7 @@ public class ShoppingCartPage extends BasePage {
             } catch (Exception e) {
                 return false;
             }
-        }, Duration.ofSeconds(8));
+        }, 8);
     }
 
     public void assertTotalPriceInCart() {

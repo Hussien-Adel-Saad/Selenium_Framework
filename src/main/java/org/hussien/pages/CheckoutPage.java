@@ -1,6 +1,7 @@
 package org.hussien.pages;
 
 import org.hussien.core.utils.InteractionUtils;
+import org.hussien.core.utils.WaitUtils;
 import org.hussien.pages.base.BasePage;
 import org.openqa.selenium.By;
 
@@ -11,6 +12,7 @@ public class CheckoutPage extends BasePage {
     private static final By DELIVERY_INSTRUCTIONS = By.xpath("//a[normalize-space()='Add delivery instructions']");
     private static final By TOTAL_PRICE_ROW = By.xpath("(//tr[contains(@class, 'order-summary-unidenfitied-style')])[2]/td[2]");
     private static final By SHIPPING_FEE_ROW = By.xpath("(//tr[contains(@class, 'order-summary-unidenfitied-style')])[1]/td[2]");
+    private static final By FULLNAME_AFTER_ADD = By.xpath("//li[contains(@class,'FullName')]");
 
     public void clickOnChangeAddress() {
 
@@ -24,6 +26,10 @@ public class CheckoutPage extends BasePage {
 
     public void clickOnAddNewAddress() {
         InteractionUtils.clickOnButtonWithText("Add a new address");
+    }
+
+    public static void waitForAddressToLoad() {
+        WaitUtils.waitForVisibility(FULLNAME_AFTER_ADD);
     }
 
 //    public void assertPriceExcludingShipping() {
