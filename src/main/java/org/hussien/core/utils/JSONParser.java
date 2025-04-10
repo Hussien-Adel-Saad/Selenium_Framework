@@ -3,8 +3,7 @@ package org.hussien.core.utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+
 
 public class JSONParser {
 

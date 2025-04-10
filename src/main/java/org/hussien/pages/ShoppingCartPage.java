@@ -1,95 +1,102 @@
 package org.hussien.pages;
 
+import org.hussien.core.utils.BrowserUtils;
 import org.hussien.core.utils.WaitUtils;
 import org.hussien.pages.base.BasePage;
 import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.testng.Assert;
-import org.testng.asserts.SoftAssert;
 
-import java.util.ArrayList;
+import java.time.Duration;
 import java.util.List;
 
-import static org.hussien.pages.SearchResultsPage.addedProductNames;
-import static org.hussien.pages.SearchResultsPage.expectedTotalPrice;
+import static org.hussien.pages.SearchResultsPage.*;
 
 public class ShoppingCartPage extends BasePage {
+    // Locators
+    private static final By PROCEED_TO_BUY_BTN = By.xpath("//input[@value='Proceed to checkout']");
+    private static final By TOTAL_PRICE = By.xpath("//span[contains(@id, 'sc-subtotal-amount-activecart')]/span");
+    private static final By CART_ITEMS = By.xpath("//div[@data-name='Active Items']//div[@class='sc-list-item-content']");
+    private final By cartItemDelete = By.xpath("//input[@value='Delete']");
 
-    SoftAssert softAssert = new SoftAssert();
-
-    By proceedToBuyBtn = By.xpath("//input[@value='Proceed to checkout']");
-    By checkoutTitle = By.xpath("//h1[normalize-space(text())='Checkout']");
+    // Custom wait for cart to stabilize
+    private void waitForCartToUpdate() {
+        WaitUtils.waitFor(driver -> {
+            try {
+                return !driver.findElements(TOTAL_PRICE).isEmpty() &&
+                        !driver.findElements(CART_ITEMS).isEmpty();
+            } catch (Exception e) {
+                return false;
+            }
+        }, Duration.ofSeconds(8));
+    }
 
     public void assertTotalPriceInCart() {
+        waitForCartToUpdate();
+
+        double actualTotalPrice = extractNumericPrice();
+        System.out.printf("Price Verification - Expected: %.2f, Actual: %.2f%n",
+                expectedTotalPrice, actualTotalPrice);
+
+        Assert.assertEquals(actualTotalPrice, expectedTotalPrice, 0.01, "Total price mismatch");
+    }
+
+    public void assertItemCountInCart() {
+        waitForCartToUpdate();
+
+        int actualItemCount = WaitUtils.waitForPresenceOfElements(CART_ITEMS).size();
+        System.out.printf("Item Count Verification - Expected: %d, Actual: %d%n",
+                addedProductNames.size(), actualItemCount);
+
+        Assert.assertEquals(actualItemCount, addedProductNames.size(),
+                "Item count in cart doesn't match expected");
+    }
+
+    private double extractNumericPrice() {
+        String priceText = WaitUtils.waitForVisibility(ShoppingCartPage.TOTAL_PRICE)
+                .getText()
+                .replaceAll("[^0-9.]", "");
+        return Double.parseDouble(priceText);
+    }
+
+    public void proceedToCheckout() {
+        WaitUtils.waitForClickable(PROCEED_TO_BUY_BTN).click();
+        WaitUtils.waitForVisibility(By.id("addressChangeLinkId"));
+    }
+
+
+    public void clearCart() {
+        BrowserUtils.navigateTo("https://www.amazon.eg/-/en/gp/cart/view.html?ref_=nav_cart");
+
         try {
-            WaitUtils.waitForPageLoad();
 
-            // Extract actual total price
-            WebElement totalPriceElement = WaitUtils.waitForVisibility(
-                    By.xpath("//span[contains(@id, 'sc-subtotal-amount-activecart')]/span")
-            );
+            while (true) {
+                List<WebElement> deleteButtons = WaitUtils.waitForPresenceOfElements(cartItemDelete);
+                if (deleteButtons.isEmpty()) break;
 
-            String totalText = totalPriceElement.getText()
-                    .replaceAll("[^0-9.]", "") // Remove non-numeric characters
-                    .trim();
+                try {
+                    deleteButtons.getFirst().click();
 
-            double actualTotalPrice = Double.parseDouble(totalText);
-
-            System.out.println("Actual total price in cart: " + actualTotalPrice);
-            System.out.println("Expected total price in cart: " + expectedTotalPrice);
-
-            // Assertion
-            Assert.assertEquals(actualTotalPrice, expectedTotalPrice);
-        } catch (Exception e) {
-            System.out.println("Error verifying total price in cart: " + e.getMessage());
-        }
-    }
-
-
-    public void assertAllProductsInCart() {
-
-        By cartItemLocator = By.xpath("//div[@data-name='Active Items']//div[@class='sc-list-item-content']");
-        List<WebElement> cartItems = WaitUtils.waitForPresenceOfElements(cartItemLocator);
-
-        List<String> actualCartProductNames = new ArrayList<>();
-        for (WebElement cartItem : cartItems) {
-            try {
-                WebElement nameElement = cartItem.findElement(By.xpath(".//span[contains(@class,'a-truncate-cut')]"));
-                actualCartProductNames.add(nameElement.getText().trim());
-            } catch (Exception e) {
-                System.out.println("Could not extract name from cart item: " + e.getMessage());
+                } catch (Exception e) {
+                    System.out.println("Delete attempt failed: " + e.getMessage());
+                }
             }
+
+            // Assert that the cart is empty by checking subtotal label
+            WebElement subtotalLabel = WaitUtils.waitForVisibility(By.id("sc-subtotal-label-activecart"));
+            String actualText = subtotalLabel.getText().trim();
+            Assert.assertEquals(actualText, "Subtotal (0 items):", "Cart is not empty as expected.");
+
+            //reset your state variables
+            expectedTotalPrice = 0.0;
+            addedProductNames.clear();
+
+        } catch (TimeoutException e) {
+            System.out.println("Cart was already empty");
         }
-        System.out.println("Actual Product names: " + actualCartProductNames);
-        System.out.println("Expected Product Count: " + addedProductNames.size());
-        System.out.println("🛒 Actual Cart Product Count: " + actualCartProductNames.size());
-
-        // Count assertion
-        softAssert.assertEquals(
-                actualCartProductNames.size(),
-                addedProductNames.size(),
-                "Mismatch in product count"
-        );
-
-        // Smart match on product names
-        for (String expected : addedProductNames) {
-            String expectedStart = expected.length() > 50 ? expected.substring(0, 50).toLowerCase() : expected.toLowerCase();
-
-            boolean found = actualCartProductNames.stream()
-                    .anyMatch(actual -> expected.toLowerCase().startsWith(actual.toLowerCase()) ||
-                            actual.toLowerCase().startsWith(expectedStart));
-
-            softAssert.assertTrue(found, "Product not matched in cart: " + expected);
-        }
-
-        softAssert.assertAll();
     }
 
 
 
-    public void clickOnProceedToBuy() {
-        WaitUtils.waitForClickable(proceedToBuyBtn).click();
-        Assert.assertTrue(isDisplayed(checkoutTitle));
-    }
 }

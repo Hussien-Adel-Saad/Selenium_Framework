@@ -1,28 +1,34 @@
 package org.hussien.pages;
 
-
+import org.hussien.core.utils.InteractionUtils;
 import org.hussien.pages.base.BasePage;
 import org.openqa.selenium.By;
 
 public class HomePage extends BasePage {
+    // Locators as constants
+    private static final By ACCOUNT_LIST = By.id("nav-link-accountList");
 
-    private final By loginAccountList = By.id("nav-link-accountList");
-    public static String currentCategory ;
-
+    // Instance-specific state
+    private String currentCategory;
 
     public void clickSignIn() {
-        hoverOverElement(loginAccountList);
-        clickOnButtonWithText("Sign in");
+        InteractionUtils.hover(ACCOUNT_LIST);
+        InteractionUtils.clickOnButtonWithText("Sign in");
     }
 
     public void selectCategory(String category) {
-        click(By.xpath("//li[@class='nav-li']//a[normalize-space(text())='" + category + "']"));
-        currentCategory = category;
+        By categoryLocator = By.xpath(String.format(
+                "//li[@class='nav-li']//a[normalize-space()='%s']",
+                category
+        ));
+        InteractionUtils.click(categoryLocator);
+        this.currentCategory = category;
     }
 
-    public boolean isCategorySelected(){
-        return isDisplayed(By.xpath("//li[@class='nav-li']//a[normalize-space(text())='" + currentCategory + "']"));
+    public boolean isCategorySelected() {
+        return InteractionUtils.isDisplayed(By.xpath(String.format(
+                "//li[@class='nav-li']//a[normalize-space()='%s']",
+                currentCategory
+        )));
     }
-
-
 }

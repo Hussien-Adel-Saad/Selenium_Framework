@@ -1,6 +1,5 @@
 package org.hussien.core.utils;
 
-
 import org.hussien.core.driver.WebDriverFactory;
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -9,73 +8,81 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
-
+import java.util.function.Function;
 
 public class WaitUtils {
+    public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(15);
+    public static final Duration POLL_INTERVAL = Duration.ofMillis(500);
 
-    private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
+    private static WebDriver getDriver() {
+        return WebDriverFactory.getDriver();
+    }
 
+    // Core wait method
+    public static <T> T waitFor(Function<WebDriver, T> condition, Duration timeout) {
+        return new WebDriverWait(getDriver(), timeout)
+                .pollingEvery(POLL_INTERVAL)
+                .ignoring(StaleElementReferenceException.class)
+                .until(condition);
+    }
 
+    // ----------- Helper for default fallback ------------
+    private static Duration resolveTimeout(Duration customTimeout) {
+        return customTimeout != null ? customTimeout : DEFAULT_TIMEOUT;
+    }
+
+    // Visibility of element
     public static WebElement waitForVisibility(By locator) {
-        return new WebDriverWait(WebDriverFactory.getDriver(), DEFAULT_TIMEOUT)
-                .until(ExpectedConditions.visibilityOfElementLocated(locator));
+        return waitForVisibility(locator, null);
     }
 
-
-
-    public static WebElement waitForClickable(By locator) {
-        return new WebDriverWait(WebDriverFactory.getDriver(), DEFAULT_TIMEOUT)
-                .until(ExpectedConditions.elementToBeClickable(locator));
-    }
-    public static void waitForAddToCartComplete(WebElement element) {
-        WebDriverWait wait = new WebDriverWait(WebDriverFactory.getDriver(), DEFAULT_TIMEOUT);
-        try {
-            wait.until(ExpectedConditions.or(
-                    ExpectedConditions.invisibilityOf(element),
-                    ExpectedConditions.not(ExpectedConditions.elementToBeClickable(element))
-            ));
-        } catch (TimeoutException e) {
-            System.out.println("Add to cart button did not disappear or become non-clickable within timeout.");
-        }
+    public static WebElement waitForVisibility(By locator, Duration timeout) {
+        return waitFor(ExpectedConditions.visibilityOfElementLocated(locator), resolveTimeout(timeout));
     }
 
-    public static WebElement waitForClickableElement(WebElement element) {
-        WebDriverWait wait = new WebDriverWait(WebDriverFactory.getDriver(),DEFAULT_TIMEOUT);
-        return wait.until(ExpectedConditions.elementToBeClickable(element));
-    }
-
-
-
-    public static void waitForPageLoad() {
-        new WebDriverWait(WebDriverFactory.getDriver(), DEFAULT_TIMEOUT)
-                .until(driver -> Objects.equals(((JavascriptExecutor) driver)
-                        .executeScript("return document.readyState"), "complete"));
-    }
-
+    // Presence of all elements
     public static List<WebElement> waitForPresenceOfElements(By locator) {
-        return new WebDriverWait(WebDriverFactory.getDriver(), DEFAULT_TIMEOUT)
-                .until(ExpectedConditions.presenceOfAllElementsLocatedBy(locator));
+        return waitForPresenceOfElements(locator, null);
     }
 
-    public static WebElement waitForPresenceOfElement(WebElement parent, By locator) {
+    public static List<WebElement> waitForPresenceOfElements(By locator, Duration timeout) {
+        return waitFor(ExpectedConditions.presenceOfAllElementsLocatedBy(locator), resolveTimeout(timeout));
+    }
+
+    // Clickable element
+    public static WebElement waitForClickable(By locator) {
+        return waitForClickable(locator, null);
+    }
+
+    public static WebElement waitForClickable(By locator, Duration timeout) {
+        return waitFor(ExpectedConditions.elementToBeClickable(locator), resolveTimeout(timeout));
+    }
+
+    public static WebElement waitForClickable(WebElement element) {
+        return new WebDriverWait(getDriver(), DEFAULT_TIMEOUT)
+                .pollingEvery(POLL_INTERVAL)
+                .ignoring(StaleElementReferenceException.class)
+                .until(ExpectedConditions.elementToBeClickable(element));
+    }
+
+    // Page load wait
+    public static void waitForPageLoad() {
+        waitFor(driver ->
+                        Objects.equals(
+                                ((JavascriptExecutor) driver).executeScript("return document.readyState"),
+                                "complete"
+                        ),
+                DEFAULT_TIMEOUT
+        );
+    }
+
+
+    // Sleep helper
+    public static void waitForMillis(long millis) {
         try {
-            WebDriverWait wait = new WebDriverWait(WebDriverFactory.getDriver(), DEFAULT_TIMEOUT);
-            return wait.until(ExpectedConditions.presenceOfNestedElementLocatedBy(parent, locator));
-        } catch (TimeoutException e) {
-            return null; // Return null if the element is not found within the timeout
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
-
-    public static List<WebElement> waitForPresenceOfElements(WebElement parent, By locator) {
-        try {
-            WebDriverWait wait = new WebDriverWait(WebDriverFactory.getDriver(), DEFAULT_TIMEOUT);
-            return wait.until(driver -> {
-                List<WebElement> elements = parent.findElements(locator);
-                return elements.isEmpty() ? null : elements;
-            });
-        } catch (TimeoutException e) {
-            return List.of(); // Return an empty list if elements are not found
-        }
-    }
-
 }

@@ -1,44 +1,61 @@
 package org.hussien.pages;
 
-import org.hussien.core.utils.WaitUtils;
+import org.hussien.core.utils.InteractionUtils;
 import org.hussien.pages.base.BasePage;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;
-import org.testng.Assert;
+
 
 public class CheckoutPage extends BasePage {
-    By changeAddressLnk = By.id("addressChangeLinkId");
+    // Locators
+    private static final By CHANGE_ADDRESS_LINK = By.id("addressChangeLinkId");
+    private static final By DELIVERY_INSTRUCTIONS = By.xpath("//a[normalize-space()='Add delivery instructions']");
+    private static final By TOTAL_PRICE_ROW = By.xpath("(//tr[contains(@class, 'order-summary-unidenfitied-style')])[2]/td[2]");
+    private static final By SHIPPING_FEE_ROW = By.xpath("(//tr[contains(@class, 'order-summary-unidenfitied-style')])[1]/td[2]");
 
     public void clickOnChangeAddress() {
-        WaitUtils.waitForClickable(changeAddressLnk).click();
+
+        try {
+            InteractionUtils.click(CHANGE_ADDRESS_LINK);
+        } catch (Exception e) {
+
+            InteractionUtils.clickWithJS(CHANGE_ADDRESS_LINK);
+        }
     }
 
-    public void clickOnAddNewAddressLink() {
-        clickOnButtonWithText("Add a new address");
+    public void clickOnAddNewAddress() {
+        InteractionUtils.clickOnButtonWithText("Add a new address");
     }
-
 
 //    public void assertPriceExcludingShipping() {
-//        WaitUtils.waitForVisibility(By.xpath("//a[normalize-space(text())='Add delivery instructions']"));
-//        // Locate the total price (including shipping) and the shipping fee
-//        WebElement totalPriceElement = WaitUtils.waitForVisibility(By.xpath("(//tr[contains(@class, 'order-summary-unidenfitied-style')])[2]/td[2]"));
-//        WebElement shippingFeeElement = WaitUtils.waitForVisibility(By.xpath("(//tr[contains(@class, 'order-summary-unidenfitied-style')])[1]/td[2]"));
+//        waitForCheckoutToLoad();
 //
-//        // Extract the text values
-//        String totalPriceText = totalPriceElement.getText().replaceAll("[^0-9.]", "");
-//        String shippingFeeText = shippingFeeElement.getText().replaceAll("[^0-9.]", "");
+//        double totalPrice = extractPrice(TOTAL_PRICE_ROW);
+//        double shippingFee = extractPrice(SHIPPING_FEE_ROW);
+//        double calculatedPrice = totalPrice - shippingFee;
 //
-//        // Parse the values into double
-//        double totalPrice = Double.parseDouble(totalPriceText);
-//        double shippingFee = Double.parseDouble(shippingFeeText);
+//        System.out.printf("Price Verification - Expected: %.2f, Calculated: %.2f%n",
+//                SearchResultsPage.expectedTotalPrice, calculatedPrice);
 //
-//        // Calculate the expected price without shipping
-//        double priceExcludingShipping = totalPrice - shippingFee;
-//
-//        System.out.println("Final price: " + priceExcludingShipping);
-//
-//        // Assert the price excluding shipping
-//        Assert.assertEquals(SearchResultsPage.expectedTotalPrice, priceExcludingShipping, "Price excluding shipping does not match expected value");
+//        Assert.assertEquals(calculatedPrice, SearchResultsPage.expectedTotalPrice, 0.01,
+//                "Price excluding shipping mismatch");
 //    }
-
+//
+//    private void waitForCheckoutToLoad() {
+//        WaitUtils.waitForVisibility(DELIVERY_INSTRUCTIONS);
+//        WaitUtils.waitFor(driver -> {
+//            try {
+//                return !WebDriverFactory.getDriver().findElements(TOTAL_PRICE_ROW).isEmpty() &&
+//                        !WebDriverFactory.getDriver().findElements(SHIPPING_FEE_ROW).isEmpty();
+//            } catch (Exception e) {
+//                return false;
+//            }
+//        }, Duration.ofSeconds(5));
+//    }
+//
+//    private double extractPrice(By locator) {
+//        String priceText = WaitUtils.waitForVisibility(locator)
+//                .getText()
+//                .replaceAll("[^0-9.]", "");
+//        return Double.parseDouble(priceText);
+//    }
 }

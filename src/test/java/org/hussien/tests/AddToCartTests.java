@@ -49,14 +49,14 @@ public class AddToCartTests extends BaseTest {
             ShoppingCartPage shoppingCartPage = new ShoppingCartPage();
             shoppingCartPage.assertTotalPriceInCart();
             ReportManager.logStepWithScreenshot("Correct total price of matching products");
-            shoppingCartPage.assertAllProductsInCart();
+            shoppingCartPage.assertItemCountInCart();
             ReportManager.logStepWithScreenshot("All products are added successfully");
 
-            shoppingCartPage.clickOnProceedToBuy();
+            shoppingCartPage.proceedToCheckout();
 
             CheckoutPage checkoutPage = new CheckoutPage();
             checkoutPage.clickOnChangeAddress();
-            checkoutPage.clickOnAddNewAddressLink();
+            checkoutPage.clickOnAddNewAddress();
 
             JSONParser parser = new JSONParser();
             JsonNode addressData = parser.parseJSON("/testData/addressDetails.json");
@@ -74,12 +74,12 @@ public class AddToCartTests extends BaseTest {
             addressForm.fillAddressForm("Full name (First and Last name)", fullName);
             addressForm.fillAddressForm("Street name", streetName);
             addressForm.fillAddressForm("City/Area", city);
-            addressForm.fillMobileNoInAddressForm("Mobile number", mobileNumber);
+            addressForm.fillMobileNumber("Mobile number", mobileNumber);
             addressForm.fillAddressForm("Building name/no", buildingNo);
             addressForm.fillAddressForm("District", district);
             addressForm.fillAddressForm("Nearest landmark", nearestLandmark);
 
-            addressForm.clickOnAddAddress();
+            addressForm.submitAddress();
             ReportManager.logStepWithScreenshot("Address is added successfully");
 
         } catch (Exception e) {

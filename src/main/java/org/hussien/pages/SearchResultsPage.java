@@ -1,159 +1,117 @@
 package org.hussien.pages;
 
 import org.hussien.core.driver.WebDriverFactory;
-
+import org.hussien.core.utils.BrowserUtils;
+import org.hussien.core.utils.InteractionUtils;
 import org.hussien.core.utils.WaitUtils;
 import org.hussien.pages.base.BasePage;
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.Select;
-
 import java.util.ArrayList;
 import java.util.List;
 
 public class SearchResultsPage extends BasePage {
-    By dropdownElement = By.id("s-result-sort-select");
-    static double expectedTotalPrice;
-    static List<String> addedProductNames = new ArrayList<>();
+    // Locators
+    private final By dropdownElement = By.id("s-result-sort-select");
+    private final By productCards = By.xpath("//div[@data-component-type='s-search-result']");
+    private final By addToCartBtn = By.xpath(".//button[text()='Add to cart']");
+    private final By priceWhole = By.xpath(".//span[@class='a-price-whole']");
+    private final By priceFraction = By.xpath(".//span[@class='a-price-fraction']");
+    private final By productName = By.xpath(".//h2//span");
+    private final By nextPageBtn = By.xpath("//a[contains(@class, 's-pagination-next') and not(contains(@class, 's-pagination-disabled'))]");
+    private final By cartIcon = By.id("nav-cart");
+
+    // State
+    public static double expectedTotalPrice;
+    public static List<String> addedProductNames = new ArrayList<>();
 
     public void applyFilter(String filterName) {
-        By filterLocator = By.xpath("//div[@id='s-refinements']//span[normalize-space(text())='" + filterName + "']/ancestor::a");
-        click(filterLocator);
+        By locator = By.xpath(String.format(
+                "//div[@id='s-refinements']//span[normalize-space(text())='%s']/ancestor::a",
+                filterName
+        ));
+        InteractionUtils.click(locator);
         waitForFilterApplied(filterName);
     }
 
     public void applySorting(String sortType) {
-
-        Select dropdown = new Select(WaitUtils.waitForVisibility(dropdownElement));
+        Select dropdown = new Select(WaitUtils.waitForClickable(dropdownElement));
         dropdown.selectByVisibleText(sortType);
+        WaitUtils.waitForPageLoad();
     }
-
 
     private void waitForFilterApplied(String filterName) {
-        By activeFilterLocator = By.xpath(
-                "//div[@id='s-refinements']//span[normalize-space(text())='" + filterName + "' and contains(@class,'bold')]");
-        WaitUtils.waitForVisibility(activeFilterLocator);
+        By locator = By.xpath(String.format(
+                "//div[@id='s-refinements']//span[normalize-space(text())='%s' and contains(@class,'bold')]",
+                filterName
+        ));
+        WaitUtils.waitForVisibility(locator);
     }
-
-     // Declare this at class level for later use
 
     public void addProductsToCart(double targetPrice, String condition) {
         boolean shouldStopSearching = false;
-        int totalAdded = 0;
         expectedTotalPrice = 0.0;
-        addedProductNames.clear(); // Reset the list before use
+        addedProductNames.clear();
 
         while (!shouldStopSearching) {
-
             WaitUtils.waitForPageLoad();
-            try {
-                Thread.sleep(3000); // Give Amazon time to fully render results
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+            WaitUtils.waitForMillis(3000);
 
-            List<WebElement> products = WaitUtils.waitForPresenceOfElements(
-                    By.xpath("//div[@data-component-type='s-search-result']")
-            );
-
+            List<WebElement> products = WaitUtils.waitForPresenceOfElements(productCards);
             boolean foundMatchOnPage = false;
 
             for (WebElement product : products) {
                 try {
-                    // Check if Add to Cart button is present
-                    List<WebElement> addToCartButtons = product.findElements(
-                            By.xpath(".//button[text()='Add to cart']")
-                    );
+                    // Use InteractionUtils for child elements
+                    List<WebElement> addButtons = InteractionUtils.findChildElements(product, addToCartBtn);
+                    if (addButtons.isEmpty()) continue;
 
-                    if (addToCartButtons.isEmpty()) {
-                        continue; // Skip if Add to Cart not present
-                    }
+                    List<WebElement> wholeParts = InteractionUtils.findChildElements(product, priceWhole);
+                    List<WebElement> fractionParts = InteractionUtils.findChildElements(product, priceFraction);
+                    if (wholeParts.isEmpty() || fractionParts.isEmpty()) continue;
 
-                    // Extract price
-                    List<WebElement> priceWholeElements = product.findElements(By.xpath(".//span[@class='a-price-whole']"));
-                    List<WebElement> priceFractionElements = product.findElements(By.xpath(".//span[@class='a-price-fraction']"));
+                    String whole = wholeParts.getFirst().getText().replace(",", "").trim();
+                    String fraction = fractionParts.getFirst().getText().trim();
+                    double price = Double.parseDouble(whole + "." + fraction);
 
-                    if (priceWholeElements.isEmpty() || priceFractionElements.isEmpty()) {
-                        continue;
-                    }
-
-                    String wholePart = priceWholeElements.getFirst().getText().replace(",", "").trim();
-                    String fractionPart = priceFractionElements.getFirst().getText().trim();
-
-                    if (wholePart.isEmpty() || fractionPart.isEmpty()) {
-                        continue;
-                    }
-
-                    double price = Double.parseDouble(wholePart + "." + fractionPart);
-
-                    // Check price condition
-                    boolean matchesCondition = condition.equalsIgnoreCase("below") ? price < targetPrice : price > targetPrice;
+                    boolean matchesCondition = condition.equalsIgnoreCase("below") ?
+                            price < targetPrice : price > targetPrice;
 
                     if (matchesCondition) {
                         foundMatchOnPage = true;
+                        WebElement nameElement = InteractionUtils.findChildElement(product, productName);
+                        String productNameText = nameElement.getText().trim();
 
-                        try {
-                            WebElement productNameElement = product.findElement(By.xpath(".//h2//span"));
-                            String productName = productNameElement.getText().trim();
+                        // Your original click logic preserved
+                        WebElement addButton = addButtons.getFirst();
+                        addButton.click();
+                        WaitUtils.waitForMillis(500); // Your original delay
 
-                            WebElement addToCartBtn = addToCartButtons.getFirst();
-                            WaitUtils.waitForClickableElement(addToCartBtn).click();
-
-                            // Wait for cart update, such as button disappearing or visual feedback
-                            WaitUtils.waitForAddToCartComplete(addToCartBtn);  // Ensure the cart button is updated or gone
-                            try {
-                                Thread.sleep(500);
-                            } catch (InterruptedException e) {
-                                throw new RuntimeException(e);
-                            }
-                            totalAdded++;
-                            expectedTotalPrice += price;
-                            addedProductNames.add(productName);
-
-                        } catch (Exception e) {
-                            System.out.println("Failed to add a matching product.");
-                        }
+                        addedProductNames.add(productNameText);
+                        expectedTotalPrice += price;
                     }
                 } catch (Exception ignored) {
+
                 }
             }
 
             if (foundMatchOnPage) {
-                System.out.println("Processed all matching products on this page. Stopping.");
                 shouldStopSearching = true;
             } else {
-                System.out.println("No matches on this page - Checking next page...");
                 try {
-                    WebElement nextPage = WaitUtils.waitForClickable(
-                            By.xpath("//a[contains(@class, 's-pagination-next') and not(contains(@class, 's-pagination-disabled'))]")
-                    );
+                    WebElement nextPage = WaitUtils.waitForClickable(nextPageBtn);
                     nextPage.click();
-                    WaitUtils.waitForPageLoad();
-                    WaitUtils.waitForPresenceOfElements(
-                            By.xpath("//div[@data-component-type='s-search-result']")
-                    );
                 } catch (Exception e) {
-                    System.out.println("No more pages available");
                     shouldStopSearching = true;
                 }
             }
-            System.out.println(addedProductNames);
-            System.out.println(totalAdded > 0
-                    ? "Successfully added " + totalAdded + " products"
-                    : "No matching products found");
         }
     }
 
+    public void clickOnCartIcon() {
 
-
-
-
-    public void clickOnCartIcon(){
-        // Navigate to cart page
-        WebElement cartIcon = WaitUtils.waitForClickable(By.id("nav-cart"));
-
-        // Use JavaScript to click (bypasses overlays)
-        JavascriptExecutor js = (JavascriptExecutor) WebDriverFactory.getDriver();
-        js.executeScript("arguments[0].click();", cartIcon);
+        WebElement cart = WaitUtils.waitForClickable(cartIcon);
+        ((JavascriptExecutor) WebDriverFactory.getDriver()).executeScript("arguments[0].click();", cart);
         WaitUtils.waitForPageLoad();
     }
 
